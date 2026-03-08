@@ -71,6 +71,38 @@
 - C23: `bool`, `true`, `false` become keywords — no include needed
 - before C99 there was no boolean type — people used `int` with 0/1 or `#define TRUE 1`
 
+## Common type idioms
+
+- array length:
+  ```c
+  int arr[10];
+  size_t len = sizeof(arr) / sizeof(arr[0]);  // 10 — compile-time constant
+  ```
+  breaks when array decays to pointer (in function params) — always pass length separately
+
+- limits — `<limits.h>` and `<stdint.h>`:
+  ```c
+  INT_MAX      // 2147483647 (on 32-bit int)
+  INT_MIN      // -2147483648
+  UINT_MAX     // 4294967295
+  UINT8_MAX    // 255
+  UINT16_MAX   // 65535
+  UINT32_MAX   // 4294967295
+  SIZE_MAX     // max value of size_t
+  ```
+
+- `malloc` returns `void*` — no cast needed in C (required in C++):
+  ```c
+  int *p = malloc(n * sizeof *p);   // sizeof *p = sizeof(int), stays correct if type changes
+  ```
+  `sizeof *p` instead of `sizeof(int)` — adapts automatically if you change the type of `p`
+
+- safe unsigned comparison:
+  ```c
+  // instead of: if (len - 1 >= 0)   — always true for unsigned!
+  // write:      if (len > 0)         — then use len - 1 inside
+  ```
+
 ## Promotion and conversion
 
 - uninitialized local variables hold garbage, not zero — reading them is UB
