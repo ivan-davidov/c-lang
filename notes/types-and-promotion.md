@@ -71,6 +71,77 @@
 - C23: `bool`, `true`, `false` become keywords — no include needed
 - before C99 there was no boolean type — people used `int` with 0/1 or `#define TRUE 1`
 
+## `typedef`
+
+`typedef` creates an alias for an existing type — it doesn't create a new type.
+
+```c
+typedef unsigned long ulong;     // ulong is now shorthand for unsigned long
+typedef int Seconds;             // Seconds is still just int — no type safety
+```
+
+### Why it exists
+
+- **readability** — `Milliseconds timeout` is clearer than `uint32_t timeout`
+- **portability** — change the underlying type in one place:
+  ```c
+  typedef uint32_t DeviceAddr;   // if hardware changes to 16-bit, change only here
+  ```
+- **hiding complexity** — function pointer types are unreadable without typedef:
+  ```c
+  // without typedef:
+  void (*signal(int, void (*)(int)))(int);   // what?
+
+  // with typedef:
+  typedef void (*SignalHandler)(int);
+  SignalHandler signal(int sig, SignalHandler handler);   // ah.
+  ```
+
+### `typedef` with structs — the C idiom
+
+In C, `struct` is part of the type name. Without typedef you must write `struct` everywhere:
+```c
+struct Point {
+    int x;
+    int y;
+};
+struct Point p1;              // must say "struct Point" every time
+```
+
+Typedef lets you drop the `struct` keyword:
+```c
+typedef struct {
+    int x;
+    int y;
+} Point;
+Point p1;                     // clean — just "Point"
+```
+
+For self-referencing structs (linked list, tree), you need the tag name:
+```c
+typedef struct Node {
+    int data;
+    struct Node *next;        // can't say "Node *next" here — typedef isn't complete yet
+} Node;
+```
+After this, `Node` and `struct Node` both work.
+
+### Conventions
+
+- **embedded / kernel** — typedef for hardware types: `typedef volatile uint32_t reg32_t;`
+- **Linux kernel style** — avoids typedef for structs, writes `struct thing` explicitly (Linus's preference — "typedef hides what the type actually is")
+- **most C projects** — typedef structs to avoid `struct` noise, especially in APIs
+- **opaque types** — typedef hides the implementation:
+  ```c
+  // in header (public):
+  typedef struct Context Context;          // forward declaration — user can't see inside
+  Context *ctx_create(void);
+
+  // in .c (private):
+  struct Context { int internal_stuff; };  // only implementation knows the layout
+  ```
+  This is how you do encapsulation in C.
+
 ## Common type idioms
 
 - array length:
