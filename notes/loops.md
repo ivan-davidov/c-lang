@@ -37,6 +37,55 @@
   ```
 - always think: does `i` represent an index (0-based) or a count (1-based)?
 
+## Common C loop idioms
+
+- read until EOF:
+  ```c
+  int c;
+  while ((c = getchar()) != EOF)  // assignment in condition — idiomatic, not a bug
+  ```
+- read lines from file:
+  ```c
+  char buf[256];
+  while (fgets(buf, sizeof(buf), fp) != NULL)
+  ```
+- walk a null-terminated string:
+  ```c
+  for (char *p = str; *p != '\0'; p++)  // or just: *p
+  ```
+- walk a linked list:
+  ```c
+  for (Node *n = head; n != NULL; n = n->next)
+  ```
+- iterate array with pointer instead of index:
+  ```c
+  for (int *p = arr; p < arr + len; p++)
+  ```
+- sentinel-controlled loop (array ends with special value):
+  ```c
+  int data[] = {3, 7, 1, -1};  // -1 is sentinel
+  for (int i = 0; data[i] != -1; i++)
+  ```
+- counting down to zero (unsigned-safe):
+  ```c
+  for (size_t i = n; i-- > 0; )  // the "goes to" operator joke: i --> 0
+  ```
+  avoids the unsigned underflow trap of `for (size_t i = n-1; i >= 0; i--)` which never terminates
+- poll/retry with timeout (embedded):
+  ```c
+  uint32_t start = millis();
+  while (!(REG->STATUS & READY_BIT)) {
+      if (millis() - start > TIMEOUT_MS) return -1;
+  }
+  ```
+- double loop break with flag or goto:
+  ```c
+  int found = 0;
+  for (int i = 0; i < rows && !found; i++)
+      for (int j = 0; j < cols && !found; j++)
+          if (matrix[i][j] == target) found = 1;
+  ```
+
 ## `goto`
 
 - not banned — used idiomatically in C for error cleanup:
