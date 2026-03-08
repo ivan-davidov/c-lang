@@ -56,8 +56,20 @@
 | `ssize_t`   | `<sys/types.h>`| signed size — return type of `read()`/`write()` (POSIX, not C standard) |
 | `ptrdiff_t` | `<stddef.h>`   | signed, result of pointer subtraction   |
 | `intptr_t`  | `<stdint.h>`   | integer guaranteed to hold a pointer    |
-| `bool`      | `<stdbool.h>`  | `true`/`false` — any nonzero converts to 1 (C99; keyword in C23) |
+| `bool`      | `<stdbool.h>`  | alias for `_Bool` (C99), becomes a keyword in C23 (no header needed) |
 | `NULL`      | `<stddef.h>`   | null pointer constant — `(void *)0`    |
+
+## `_Bool` / `bool`
+
+- `_Bool` is a real unsigned integer type (C99) — stores only 0 or 1
+- any nonzero value assigned to `_Bool` becomes 1, zero becomes 0:
+  ```c
+  _Bool b = 42;  // b == 1
+  _Bool c = 0;   // c == 0
+  ```
+- `<stdbool.h>` provides `bool`, `true`, `false` as macros mapping to `_Bool`, `1`, `0`
+- C23: `bool`, `true`, `false` become keywords — no include needed
+- before C99 there was no boolean type — people used `int` with 0/1 or `#define TRUE 1`
 
 ## Promotion and conversion
 
