@@ -1,0 +1,25 @@
+# Build artifacts
+*.o
+*.d
+
+# Compiled exercise binaries (no fixed names — just exclude common patterns)
+ex[0-9]*[!.c]
+a.out
+
+# Clangd / Bear
+compile_commands.json
+.cache/
+
+# Valgrind
+vgcore.*
+
+# Editor
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
