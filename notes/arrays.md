@@ -27,37 +27,43 @@ int d[] = {1, 2, 3};                // compiler infers size 3
 
 Arrays are contiguous bytes. Always. A 2D array is just a flat block with row-major indexing:
 
-```
+```c
 int m[2][3] = {{1,2,3}, {4,5,6}};
+```
 
+```
 memory layout (row-major):
 [1][2][3][4][5][6]
  ─────── ───────
   row 0   row 1
+```
 
-m[row][col]  →  *(*(m + row) + col)
+### How `m[row][col]` actually works
 
-but this is NOT two memory reads. here's what actually happens:
+`m[row][col]` is equivalent to `*(*(m + row) + col)` — but this is NOT two memory reads:
 
+```
 m              →  the table itself       type: int (*)[3]   addr: 0x1000
 m + row        →  find the right row     type: int (*)[3]   addr += row * 12 bytes
 *(m + row)     →  "open" the row         type: int *        SAME address, different type
 *(m+row) + col →  find the column        type: int *        addr += col * 4 bytes
 *(*(m+row)+col)→  read the value         type: int          actual memory read
+```
 
-the first * doesn't read memory — it unwraps "pointer to array" into
-"pointer to first element". the address is the same because an array IS
-its first element's address. there's no separate array object in memory.
+The first `*` doesn't read memory — it unwraps "pointer to array" into "pointer to first element". The address is the same because an array IS its first element's address. There's no separate array object in memory.
 
-this is why passing 2D arrays to functions requires the column size:
-  void f(int m[][3], int rows);   // same as: void f(int (*m)[3], int rows)
-  // 3 is the stride — compiler needs it to calculate row jumps
+This is why passing 2D arrays to functions requires the column size:
+```c
+void f(int m[][3], int rows);   // same as: void f(int (*m)[3], int rows)
+// 3 is the stride — compiler needs it to calculate row jumps
+```
 
-an array and its first element live at the same address:
-  int arr[3] = {10, 20, 30};
-  int (*p)[3] = &arr;
-  // p, *p, p[0], &arr[0] are all the same address (0x1000)
-  // but p is int (*)[3] and *p is int * — different type, same bits
+An array and its first element live at the same address:
+```c
+int arr[3] = {10, 20, 30};
+int (*p)[3] = &arr;
+// p, *p, p[0], &arr[0] are all the same address (0x1000)
+// but p is int (*)[3] and *p is int * — different type, same bits
 ```
 
 - **row-major** — rows are contiguous. Last index varies fastest.
