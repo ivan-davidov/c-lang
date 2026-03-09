@@ -35,7 +35,11 @@ memory layout (row-major):
  ─────── ───────
   row 0   row 1
 
-m[row][col] = *(m + row * 3 + col)   // what the compiler does
+m[row][col] = *(*(m + row) + col)    // what the compiler does — two dereferences
+// step 1: m + row      → pointer to row (int (*)[3])
+// step 2: *(m + row)   → decays to pointer to first element of that row (int *)
+// step 3: + col        → offset within the row
+// the FLAT address ends up being: (char *)m + (row * 3 + col) * sizeof(int)
 ```
 
 - **row-major** — rows are contiguous. Last index varies fastest.
