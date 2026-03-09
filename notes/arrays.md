@@ -35,11 +35,29 @@ memory layout (row-major):
  ─────── ───────
   row 0   row 1
 
-m[row][col] = *(*(m + row) + col)    // what the compiler does — two dereferences
-// step 1: m + row      → pointer to row (int (*)[3])
-// step 2: *(m + row)   → decays to pointer to first element of that row (int *)
-// step 3: + col        → offset within the row
-// the FLAT address ends up being: (char *)m + (row * 3 + col) * sizeof(int)
+m[row][col]  →  *(*(m + row) + col)
+
+but this is NOT two memory reads. here's what actually happens:
+
+m              →  the table itself       type: int (*)[3]   addr: 0x1000
+m + row        →  find the right row     type: int (*)[3]   addr += row * 12 bytes
+*(m + row)     →  "open" the row         type: int *        SAME address, different type
+*(m+row) + col →  find the column        type: int *        addr += col * 4 bytes
+*(*(m+row)+col)→  read the value         type: int          actual memory read
+
+the first * doesn't read memory — it unwraps "pointer to array" into
+"pointer to first element". the address is the same because an array IS
+its first element's address. there's no separate array object in memory.
+
+this is why passing 2D arrays to functions requires the column size:
+  void f(int m[][3], int rows);   // same as: void f(int (*m)[3], int rows)
+  // 3 is the stride — compiler needs it to calculate row jumps
+
+an array and its first element live at the same address:
+  int arr[3] = {10, 20, 30};
+  int (*p)[3] = &arr;
+  // p, *p, p[0], &arr[0] are all the same address (0x1000)
+  // but p is int (*)[3] and *p is int * — different type, same bits
 ```
 
 - **row-major** — rows are contiguous. Last index varies fastest.
