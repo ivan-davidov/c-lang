@@ -95,14 +95,59 @@ pp         // address of p
 ```
 
 Use cases:
-- function that modifies a pointer (e.g. realloc pattern):
+
+- **function that modifies a pointer** — the caller needs to see the new address:
   ```c
   void grow(int **buf, size_t *cap) {
       *cap *= 2;
       *buf = realloc(*buf, *cap * sizeof **buf);
   }
+  int *data = malloc(10 * sizeof *data);
+  size_t cap = 10;
+  grow(&data, &cap);   // data may now point somewhere else
   ```
-- array of strings: `char **argv` — pointer to array of `char *`
+
+- **array of strings** — `char **` is a pointer to an array of `char *`:
+  ```c
+  int main(int argc, char **argv) {
+      for (int i = 0; i < argc; i++)
+          printf("%s\n", argv[i]);     // argv[i] is char *
+  }
+  ```
+
+- **function that allocates for the caller** — return via parameter:
+  ```c
+  int read_file(const char *path, char **out, size_t *len) {
+      *out = malloc(file_size);
+      // ... read into *out ...
+      *len = file_size;
+      return 0;                        // caller frees *out
+  }
+  char *data;
+  size_t len;
+  read_file("input.txt", &data, &len);
+  free(data);
+  ```
+
+- **linked list operations** — pass `Node **head` so insert/delete can change the head:
+  ```c
+  void prepend(Node **head, int val) {
+      Node *n = malloc(sizeof *n);
+      n->data = val;
+      n->next = *head;
+      *head = n;                       // caller's head pointer updated
+  }
+  Node *list = NULL;
+  prepend(&list, 42);                  // list now points to new node
+  ```
+  if you passed `Node *head`, the caller's `list` would still be `NULL`
+
+- **array of pointers with dynamic rows** (ragged array):
+  ```c
+  char **lines = malloc(n * sizeof *lines);
+  for (int i = 0; i < n; i++)
+      lines[i] = strdup(some_string);  // each row independently allocated
+  ```
 
 ## `const` and pointers
 
