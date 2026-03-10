@@ -59,14 +59,27 @@ static inline int max(int a, int b) { return a > b ? a : b; }
 ```c
 // BAD:
 #define LOG(msg) printf("[LOG] "); printf("%s\n", msg);
+
 if (error)
-    LOG("fail");    // only first printf is inside the if
+    LOG("fail");
+// expands to:
+//   if (error)
+//       printf("[LOG] ");       ← only this is inside the if
+//   printf("%s\n", "fail");    ← ALWAYS runs — bug
+//   else ...                   ← compiler error: dangling else
 
 // GOOD:
 #define LOG(msg) do { printf("[LOG] "); printf("%s\n", msg); } while(0)
+
 if (error)
-    LOG("fail");    // whole block is one statement, works with if/else
+    LOG("fail");
+// expands to:
+//   if (error)
+//       do { printf("[LOG] "); printf("%s\n", "fail"); } while(0);
+//   ← one statement, semicolon lands naturally, if/else works
 ```
+
+Why not just `{ }` braces? Because `{ };` with the semicolon from `LOG("fail");` creates an empty statement that breaks `if/else` chains. `do { } while(0)` *consumes* the semicolon as part of its syntax.
 
 ## `#` and `##` operators
 
