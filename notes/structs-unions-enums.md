@@ -225,7 +225,7 @@ with sizeof = 16 (padded to multiple of 8):
   arr[2].d at 0x1020  — aligned ✓
 ```
 
-Without trailing padding, the second array element would have a misaligned `double`.
+Without trailing padding, the second struct starts at a wrong address and every member inside it is misaligned. Trailing padding ensures `sizeof(struct)` is a stride that preserves alignment for all members in every subsequent array element.
 
 ### Summary of the two rules
 
