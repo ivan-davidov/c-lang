@@ -366,55 +366,207 @@ float readings[SENSOR_COUNT];   // array sized by enum — grows automatically
 
 ## Idioms
 
-- **opaque struct** — hide implementation:
-  ```c
-  // header
-  typedef struct Config Config;
-  Config *config_load(const char *path);
-  void config_free(Config *c);
+### Opaque struct (encapsulation in C)
 
-  // source
-  struct Config { char *data; size_t len; };
-  ```
+**What:** Forward-declare a struct in the header, define it only in the `.c` file.
+**Why:** Users can't access or depend on internal fields — you can change the layout without breaking their code.
+**When:** Library APIs, any module boundary where you want to hide implementation.
+**Where:** SQLite (`sqlite3 *`), OpenSSL (`SSL_CTX *`), FreeRTOS (`TaskHandle_t`).
 
-- **struct of function pointers** — C "interface" / vtable:
-  ```c
-  typedef struct {
-      int (*open)(const char *path);
-      int (*read)(void *buf, size_t len);
-      void (*close)(void);
-  } Driver;
+```c
+// config.h (public)
+typedef struct Config Config;          // user sees only the pointer type
+Config *config_load(const char *path);
+int config_get_port(const Config *c);
+void config_free(Config *c);
 
-  Driver uart_driver = {.open = uart_open, .read = uart_read, .close = uart_close};
-  uart_driver.open("/dev/ttyS0");
-  ```
+// config.c (private)
+struct Config {                        // layout hidden from users
+    char *data;
+    size_t len;
+    int port;
+};
+```
 
-- **flexible array member** (C99) — variable-length data at end of struct:
-  ```c
-  typedef struct {
-      size_t len;
-      char data[];          // must be last member, no size
-  } Buffer;
+### Struct of function pointers (vtable / interface)
 
-  Buffer *b = malloc(sizeof(Buffer) + 100);
-  b->len = 100;
-  // b->data[0..99] is usable
-  ```
-  one allocation for header + data. Common in network packets, file formats, kernel structures.
+**What:** A struct where every member is a function pointer — C's version of an interface or virtual method table.
+**Why:** Swap implementations at runtime without changing calling code. One API, multiple backends.
+**When:** Driver abstraction, plugin systems, testing (swap real driver for a mock).
+**Where:** Linux kernel (`struct file_operations`), embedded HALs, any driver layer.
 
-- **designated initializers for config**:
-  ```c
-  Config cfg = {
-      .port = 8080,
-      .max_connections = 100,
-      .verbose = true,
-      // unspecified members are zero-initialized
-  };
-  ```
+```c
+typedef struct {
+    int (*open)(const char *path);
+    int (*read)(void *buf, size_t len);
+    void (*close)(void);
+} Driver;
 
-- **compound literal as default**:
-  ```c
-  void draw(Point p);
-  draw((Point){0});           // zero-initialized temporary
-  draw((Point){.x = 5});     // y defaults to 0
-  ```
+// UART implementation
+Driver uart_driver = {.open = uart_open, .read = uart_read, .close = uart_close};
+
+// SPI implementation — same interface, different backend
+Driver spi_driver = {.open = spi_open, .read = spi_read, .close = spi_close};
+
+// calling code doesn't care which one:
+void process(Driver *d) {
+    d->open("/dev/sensor");
+    d->read(buf, 64);
+    d->close();
+}
+```
+
+### Tagged union (algebraic data type / variant)
+
+**What:** An `enum` tag + `union` — C's manual version of sum types / discriminated unions.
+**Why:** Represent a value that can be one of several types, safely dispatched at runtime.
+**When:** Any data that has variants — messages, events, AST nodes, config values, JSON.
+**Where:** SDL events, X11 events, protocol parsers, interpreters, serialization.
+
+```c
+typedef enum { VAL_INT, VAL_FLOAT, VAL_STR } ValType;
+
+typedef struct {
+    ValType type;
+    union {
+        int i;
+        float f;
+        char *s;
+    };
+} Value;
+
+// always check the tag before reading:
+switch (v.type) {
+    case VAL_INT:   printf("%d\n", v.i); break;
+    case VAL_FLOAT: printf("%f\n", v.f); break;
+    case VAL_STR:   printf("%s\n", v.s); break;
+}
+```
+
+Unlike Rust/Haskell, the compiler won't stop you from reading `v.f` when `v.type == VAL_INT`. That's on you.
+
+### Flexible array member
+
+**What:** An unsized array as the last struct member — allocate header + data in one `malloc`.
+**Why:** One allocation, one free, data is contiguous with the header (cache-friendly).
+**When:** Variable-length records — network packets, file format records, message buffers.
+**Where:** Linux kernel (`struct sk_buff`), protocol implementations, file systems.
+
+```c
+typedef struct {
+    size_t len;
+    char data[];              // must be last, no size specified
+} Buffer;
+
+Buffer *b = malloc(sizeof(Buffer) + 100);   // header + 100 bytes of data
+b->len = 100;
+memcpy(b->data, source, 100);
+// one free() cleans up everything
+free(b);
+```
+
+Cannot be stack-allocated or used as a value type — must be heap-allocated through a pointer.
+
+### Designated initializers for config
+
+**What:** Name the fields you're setting, let the rest default to zero.
+**Why:** Self-documenting, order-independent, new fields added later auto-default to zero.
+**When:** Initialization of structs with many fields where most have sensible defaults.
+**Where:** Everywhere — library option structs, hardware configuration, test setup.
+
+```c
+Config cfg = {
+    .port = 8080,
+    .max_connections = 100,
+    .verbose = true,
+    // .timeout, .log_path, etc. — all zero/NULL by default
+};
+```
+
+### Compound literal
+
+**What:** Creates an unnamed temporary struct value inline — `(Type){initializer}`.
+**Why:** Pass struct values to functions without declaring a variable first.
+**When:** One-off values, default arguments, initializing pointers to stack-allocated structs.
+**Where:** Function calls, assignments, anywhere a struct value is needed.
+
+```c
+void draw(Point p);
+draw((Point){.x = 5, .y = 10});     // temporary, no variable needed
+draw((Point){0});                     // zero-initialized
+
+Point *p = &(Point){.x = 1, .y = 2}; // pointer to compound literal (lifetime = enclosing scope)
+```
+
+### Init/destroy pair (resource management)
+
+**What:** Constructor/destructor functions that allocate and free a struct and its resources.
+**Why:** C has no RAII or destructors — manual cleanup is the only option. Pairing them makes ownership explicit.
+**When:** Any struct that owns heap memory, file handles, or hardware resources.
+**Where:** Every C library — `fopen`/`fclose`, `pthread_create`/`pthread_join`, `malloc`/`free`.
+
+```c
+typedef struct {
+    int fd;
+    char *buf;
+    size_t buf_size;
+} Stream;
+
+Stream *stream_open(const char *path) {
+    Stream *s = malloc(sizeof *s);
+    if (!s) return NULL;
+    s->fd = open(path, O_RDONLY);
+    if (s->fd < 0) { free(s); return NULL; }
+    s->buf_size = 4096;
+    s->buf = malloc(s->buf_size);
+    if (!s->buf) { close(s->fd); free(s); return NULL; }
+    return s;
+}
+
+void stream_close(Stream *s) {
+    if (!s) return;
+    free(s->buf);
+    close(s->fd);
+    free(s);
+}
+```
+
+### Container struct (grouping related state)
+
+**What:** Bundle related variables into a struct instead of passing 5 separate arguments.
+**Why:** Cleaner function signatures, easier to extend, single pointer pass instead of copying N values.
+**When:** When 3+ related values keep traveling together through functions.
+**Where:** Embedded context structs, game state, parser state, connection handles.
+
+```c
+// instead of:
+void render(int x, int y, int w, int h, float zoom, bool visible);
+
+// bundle it:
+typedef struct {
+    int x, y, w, h;
+    float zoom;
+    bool visible;
+} Viewport;
+
+void render(const Viewport *vp);
+```
+
+### Bit-field struct (hardware registers)
+
+**What:** Struct members with explicit bit widths.
+**Why:** Map directly to hardware register layouts or protocol bit fields.
+**When:** Register definitions, compact flags, protocol headers.
+**Where:** Embedded firmware, network protocol parsing.
+
+```c
+typedef struct {
+    uint8_t enabled : 1;      // 1 bit
+    uint8_t mode    : 3;      // 3 bits — values 0..7
+    uint8_t channel : 4;      // 4 bits — values 0..15
+} ControlReg;                  // total: 1 byte, 8 bits, no waste
+
+ControlReg reg = {.enabled = 1, .mode = 3, .channel = 5};
+```
+
+Caveat: bit ordering (MSB/LSB first) is implementation-defined — not portable across compilers/architectures. For portable code, use explicit bit masks instead.
