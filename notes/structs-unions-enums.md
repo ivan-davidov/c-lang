@@ -161,6 +161,14 @@ Not to the largest member. Each type has its own alignment requirement:
 | `int` / `float` | 4 | 4 |
 | `double` / pointer | 8 | 8 |
 
+Think of padding as belonging to the **next** member, not the previous one. A `char` alone needs nothing after it — padding only appears because the next member needs a correctly aligned start address:
+
+```c
+struct { char a; char b; };           // 0 padding — b aligns to 1, any address works
+struct { char a; int b; };            // 3 bytes before b — b needs 4-aligned
+struct { char a; char b; int c; };    // 2 bytes before c — offset 2, c needs offset 4
+```
+
 Padding is inserted **before** a member to push it to its required alignment:
 
 ```c
