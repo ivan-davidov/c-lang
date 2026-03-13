@@ -144,59 +144,117 @@ With `char name[32]`, `b = a` copies the entire array. Safe.
 
 ## Memory layout and alignment
 
-The compiler inserts **padding bytes** to align members to their natural boundaries:
-
-```c
-struct Bad {
-    char a;      // 1 byte
-                 // 3 bytes padding ← compiler inserts this
-    int b;       // 4 bytes
-};
-// sizeof(struct Bad) = 8, not 5
-
-struct Good {
-    int b;       // 4 bytes
-    char a;      // 1 byte
-                 // 3 bytes trailing padding (struct size must be multiple of largest alignment)
-};
-// sizeof(struct Good) = 8 — same here, but different internal layout
-```
-
 ### Why alignment exists
 
-CPUs read memory in chunks (4 or 8 bytes). An `int` at address 0x1001 (not divisible by 4) requires two reads and a shift — slow or even illegal on some architectures (ARM will fault).
+CPUs read memory in aligned chunks. A 4-byte `int` at address 0x1001 (not divisible by 4) straddles two chunks — the CPU needs two reads and a shift to assemble the value. On x86 this is just slow. On ARM it's a hardware fault — your program crashes.
 
-### Rules
+So the compiler inserts invisible **padding bytes** to ensure every member starts at an address divisible by its own size.
 
-- each member aligns to its own size: `char` = 1, `short` = 2, `int` = 4, `double`/pointer = 8
-- struct total size is padded to a multiple of its largest member's alignment
-- members are laid out in declaration order — compiler never reorders
+### Rule 1: each member aligns to its own size
+
+Not to the largest member. Each type has its own alignment requirement:
+
+| Type | Size | Must start at address divisible by |
+|------|------|------------------------------------|
+| `char` | 1 | 1 (any address — no constraint) |
+| `short` | 2 | 2 |
+| `int` / `float` | 4 | 4 |
+| `double` / pointer | 8 | 8 |
+
+Padding is inserted **before** a member to push it to its required alignment:
+
+```c
+struct Example {
+    char a;       // offset 0   — size 1, aligns to 1 ✓
+                  // 1 byte padding — because short needs offset divisible by 2
+    short b;      // offset 2   — size 2, aligns to 2 ✓
+    char c;       // offset 4   — size 1, aligns to 1 ✓
+                  // 3 bytes padding — because int needs offset divisible by 4
+    int d;        // offset 8   — size 4, aligns to 4 ✓
+    char e;       // offset 12  — size 1, aligns to 1 ✓
+                  // 3 bytes padding — because double needs offset divisible by 8? NO.
+                  // actually 3 bytes padding to reach offset 16 for double
+    double f;     // offset 16  — size 8, aligns to 8 ✓
+};
+```
+
+Visualized byte-by-byte (64-bit system):
+
+```
+offset: 0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23
+        [a][_][b  b][c][_ __ _][d  d  d  d][e][_  _  _  _  _  _  _][f  f  f  f  f  f  f  f]
+         1  P  2     1  3 pad   4            1  7 padding            8
+
+sizeof = 24
+```
+
+Notice: the padding before `d` is 3 bytes (to reach offset 8 which is divisible by 4). The padding before `f` is 3 bytes (to reach offset 16 which is divisible by 8). Each gap is determined by **what comes next**, not by the largest member.
+
+### Rule 2: struct total size must be a multiple of its largest member's alignment
+
+This is **trailing padding** — it exists so that arrays of structs work:
+
+```c
+struct Foo {
+    double d;    // 8 bytes          offset 0
+    char a;      // 1 byte           offset 8
+                 // 7 bytes trailing padding
+};
+// sizeof = 16, not 9
+```
+
+Why? Imagine an array:
+```
+struct Foo arr[3];
+
+if sizeof were 9:
+  arr[0].d at 0x1000  — aligned ✓
+  arr[1].d at 0x1009  — NOT divisible by 8 — broken ✗
+
+with sizeof = 16 (padded to multiple of 8):
+  arr[0].d at 0x1000  — aligned ✓
+  arr[1].d at 0x1010  — aligned ✓
+  arr[2].d at 0x1020  — aligned ✓
+```
+
+Without trailing padding, the second array element would have a misaligned `double`.
+
+### Summary of the two rules
+
+1. **Between members:** pad so the next member starts at an address divisible by **its own** size
+2. **At the end:** pad so the total struct size is a multiple of the **largest member's** alignment
+
+The compiler never reorders members — padding is the only tool it has.
 
 ### Minimizing padding — order members largest to smallest
 
 ```c
-// wasteful: 24 bytes (on 64-bit)
+// wasteful: 24 bytes
 struct Padded {
-    char a;       // 1 + 7 padding
+    char a;       // 1 + 7 padding (double needs 8-aligned)
     double b;     // 8
-    char c;       // 1 + 7 padding
+    char c;       // 1 + 7 trailing padding (struct aligns to 8)
 };
 
-// tight: 16 bytes
-struct Packed {
+// tight: 16 bytes — same data, half the waste
+struct Tight {
     double b;     // 8
     char a;       // 1
-    char c;       // 1 + 6 padding
+    char c;       // 1 + 6 trailing padding
 };
 ```
+
+Same members, different order, 8 bytes saved. On embedded with limited RAM this matters.
 
 ### Checking layout
 
 ```c
 #include <stddef.h>
-printf("size: %zu\n", sizeof(struct Foo));
-printf("offset of b: %zu\n", offsetof(struct Foo, b));  // exact byte offset of member
+printf("size: %zu\n", sizeof(struct Example));
+printf("offset of d: %zu\n", offsetof(struct Example, d));  // exact byte offset
 ```
+
+Verify your understanding by printing offsets — if they don't match your mental model, you miscounted padding.
 
 ### Packed structs — disable padding (embedded/protocols)
 
