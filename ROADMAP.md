@@ -35,13 +35,13 @@ Foundation  ───→ Core Building   ───→ STM32 Core       ───
                      components
 
      Stage 5                Stage 6              Stage 7
-───→ ESP32 Home        ───→ RTOS &          ───→ Advanced
-     Automation             Systems               Projects
+───→ ESP32 Home        ───→ RTOS, Systems   ───→ Advanced
+     Automation             & Linux Kernel        Projects
   A: Producer-consumer   CS:APP + labs          IDEAS.md
   A: Mini shell          OSTEP                  RTL-SDR, DSP,
   B: Power design        FreeRTOS on STM32      robotics, RF
-  C: WiFi, MQTT,         Home hub (RPi)
-     Projects 1–4
+  C: WiFi, MQTT,         Kernel drivers (RPi)
+     Projects 1–4        Home hub (RPi)
      Deploy in home
 ```
 
@@ -314,9 +314,9 @@ Each stage requires the **previous stage's milestone** to be met before starting
 
 ---
 
-## Stage 6 — RTOS & Systems
+## Stage 6 — RTOS, Systems & Linux Kernel
 
-> Real-time operating system. Computer systems foundations. Full home automation hub.
+> Real-time operating system. Computer systems foundations. Linux kernel drivers. Full home automation hub.
 
 ### Reading
 
@@ -327,14 +327,37 @@ Each stage requires the **previous stage's milestone** to be met before starting
   - [ ] Malloc lab (you already built a custom malloc — this deepens it)
   - [ ] Proxy lab (you already built a TCP client — this extends it)
 - [ ] **OSTEP** (Arpaci-Dusseau) — scheduling, virtual memory, concurrency, persistence (continue from Stage 5)
+- [ ] **Linux Device Drivers** (LDD3, free online) or **Linux Kernel Programming** (Billimoria)
+  - Skim Part I (building, modules), read Part II (char devices, concurrency) carefully
 
-### Hardware
+### FreeRTOS
 
 - [ ] **FreeRTOS on STM32:**
   - [ ] Port BME280 code to FreeRTOS — sensor task pushes readings to a queue, display task reads from queue
   - [ ] Add UART task with mutex (shared peripheral)
   - This is the producer-consumer pattern from Stage 5, now on real hardware with real constraints
-- [ ] **Buy Raspberry Pi 4** (for the hub)
+
+### Linux Kernel Drivers (on Raspberry Pi 4)
+
+- [ ] **Setup:** Build and install a custom kernel on RPi 4 (or use kernel headers)
+- [ ] **Hello world module:** `module_init` / `module_exit`, `printk`, `insmod` / `rmmod`
+  - Understand: kernel space vs user space, why a bug here crashes the whole system
+- [ ] **Character device driver:** Register `/dev/mydevice` with `file_operations`
+  - [ ] Implement `open()`, `read()`, `write()`, `release()`
+  - [ ] User space program talks to your driver via standard file I/O
+  - [ ] Add `ioctl()` for control commands
+- [ ] **GPIO driver:** Control an LED from a kernel module on RPi 4
+  - [ ] Map GPIO registers, export to `/dev/` or `/sys/class/gpio/`
+  - [ ] Bonus: add interrupt handling for a button (kernel IRQ)
+- [ ] **I2C driver for BME280:** Write a kernel driver that exposes temperature via `/sys/` or `/dev/`
+  - [ ] Register as an I2C client driver
+  - [ ] Read sensor registers from kernel space
+  - [ ] Expose readings to user space via sysfs attributes
+  - Directly connects your bare-metal BME280 work (Stage 4) with the Linux driver model — same chip, different context
+
+### Home Automation Hub
+
+- [ ] **Buy Raspberry Pi 4** (for hub + kernel work)
 - [ ] **Project 5: Surveillance Node** (optional)
   - [ ] RPi 4 + camera + Frigate NVR
   - [ ] ESP32 PIR motion trigger via MQTT
@@ -349,6 +372,8 @@ Each stage requires the **previous stage's milestone** to be met before starting
 
 - [ ] FreeRTOS multi-task system running stable on STM32
 - [ ] At least 3 CS:APP labs completed
+- [ ] Linux kernel character device driver works — user space program reads/writes to `/dev/mydevice`
+- [ ] BME280 kernel driver reads temperature via sysfs on RPi 4
 - [ ] Home hub operational with all nodes connected, automations running, data visualized in Grafana
 
 ---
@@ -368,9 +393,9 @@ Each stage requires the **previous stage's milestone** to be met before starting
 ### Additional directions
 
 - [ ] **Robotics firmware** — Read: Making Embedded Systems (Elecia White)
-- [ ] **Linux kernel / device drivers** — Write a character device module. Read: CS:APP Ch. 8–9, OSTEP fully.
 - [ ] **Deeper C systems** — HTTP server with epoll. Read: Beej's Guide to Network Programming.
 - [ ] **PCB design** — Phil's Lab KiCad series. Design and order your own boards.
+- [ ] **Advanced kernel** — Network driver, block device driver, or contribute to a subsystem.
 
 ---
 
@@ -402,6 +427,7 @@ Each project is 150–350 lines. Builds directly on the previous ones. Every one
 | **Beej's Guide to Network Programming** (free) | Sockets, TCP/UDP, HTTP | Stage 4 |
 | **CS:APP** — Bryant & O'Hallaron | Memory, assembly, processes, networking | Stage 6 |
 | **OSTEP** — Arpaci-Dusseau (free) | OS internals: threads, scheduling, VM | Stages 5–6 |
+| **Linux Device Drivers** (LDD3, free) or **Linux Kernel Programming** (Billimoria) | Kernel modules, char devices, driver model | Stage 6 |
 | **Crafting Interpreters** Part III — Nystrom | Bytecode VM in C | Stage 7+ |
 | **Making Embedded Systems** — White | Embedded architecture, patterns | Stage 7+ |
 

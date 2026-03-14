@@ -66,6 +66,7 @@ make clean
 |------|--------------|------|
 | **CS:APP** — Bryant & O'Hallaron | Memory, assembly, processes, concurrency, networking — the foundation | Stage 6 (labs are the real value) |
 | **OSTEP** — Arpaci-Dusseau | OS internals: processes, threads, scheduling, virtual memory (free online) | Stages 5–6, before/alongside FreeRTOS |
+| **Linux Device Drivers** (LDD3) — Corbet, Rubini, Kroah-Hartman | Kernel modules, char devices, driver model (free online) | Stage 6 |
 | **The Linux Programming Interface** — Kerrisk | Definitive POSIX/Linux API reference: files, processes, signals, sockets, IPC | Reference book, not cover to cover |
 | **Unix Network Programming** — Stevens | Sockets, TCP/UDP, select/poll/epoll, the real depth | When you need networking beyond Beej |
 
