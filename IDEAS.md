@@ -1,7 +1,7 @@
-# Project Ideas — After Phase 3+
+# Project Ideas — Stage 7+
 
 Electronics, signal processing, robotics, and sensing projects.
-All build on embedded C skills from the roadmap.
+All build on C + electronics + embedded skills from Stages 1–6.
 
 ---
 

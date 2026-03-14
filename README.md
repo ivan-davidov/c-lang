@@ -1,30 +1,36 @@
 # c-lang
 
-Book exercises and examples while learning C. Three books, read in parallel
-as the roadmap dictates — not cover to cover.
+Learning C, electronics, and embedded systems. See [ROADMAP.md](ROADMAP.md)
+for the full plan and [IDEAS.md](IDEAS.md) for advanced project ideas.
 
 ## Books
 
 - **King** — *C Programming: A Modern Approach* — primary, chapters 1-20
 - **Modern C** — Gustedt — reference when King is unclear
-- **Effective C** — Seacord — secure C, undefined behavior, safety (from Module 4)
+- **Effective C** — Seacord — secure C, undefined behavior, safety (Stage 1)
 
 ## Structure
 
 ```
 c-lang/
-├── king/
-│   ├── ch01-03/          # Module 1: program structure, variables, types, printf
-│   ├── ch04-06/          # Module 2: if/else, loops, functions
-│   ├── ch11/             # Module 3a: pointers
-│   ├── ch12-13/          # Module 3b: arrays and strings
-│   └── ch15-16/          # Module 4: structs, pointers to structs
-├── modern-c/
-│   ├── ch01/             # Module 1: backup reference
-│   └── ch06/             # Module 3a: pointers reference
-├── effective-c/
-│   └── ch01-03/          # Module 4: UB, object types, safety
-└── snippets/             # reusable patterns discovered along the way
+├── king/                  # King chapter exercises
+│   ├── ch01-03/           # program structure, variables, types, printf
+│   ├── ch04-06/           # if/else, loops, functions
+│   ├── ch11/              # pointers
+│   ├── ch12-13/           # arrays and strings
+│   └── ch15-16/           # structs, pointers to structs
+├── modern-c/              # Modern C reference exercises
+├── effective-c/           # Effective C exercises (UB, types, safety)
+├── projects/              # C projects from the roadmap
+│   ├── state-machine/     # Stage 1: FSM framework
+│   ├── ring-buffer/       # Stage 2: circular buffer library
+│   ├── uart-parser/       # Stage 3: command parser
+│   ├── tcp-client/        # Stage 4: socket client (Beej's)
+│   ├── my-malloc/         # Stage 4: custom allocator
+│   ├── producer-consumer/ # Stage 5: pthreads + mutex
+│   └── mini-shell/        # Stage 5: fork/exec/pipe
+├── notes/                 # concept notes and gotchas
+└── snippets/              # reusable patterns discovered along the way
 ```
 
 Each chapter directory holds exercise files (`ex01.c`, `ex02.c`, ...) and
@@ -58,8 +64,8 @@ make clean
 
 | Book | What it's for | When |
 |------|--------------|------|
-| **CS:APP** — Bryant & O'Hallaron | Memory, assembly, processes, concurrency, networking — the foundation | Phase 4+ (labs are the real value) |
-| **OSTEP** — Arpaci-Dusseau | OS internals: processes, threads, scheduling, virtual memory (free online) | Phase 4, before/alongside FreeRTOS |
+| **CS:APP** — Bryant & O'Hallaron | Memory, assembly, processes, concurrency, networking — the foundation | Stage 6 (labs are the real value) |
+| **OSTEP** — Arpaci-Dusseau | OS internals: processes, threads, scheduling, virtual memory (free online) | Stages 5–6, before/alongside FreeRTOS |
 | **The Linux Programming Interface** — Kerrisk | Definitive POSIX/Linux API reference: files, processes, signals, sockets, IPC | Reference book, not cover to cover |
 | **Unix Network Programming** — Stevens | Sockets, TCP/UDP, select/poll/epoll, the real depth | When you need networking beyond Beej |
 
@@ -67,19 +73,18 @@ make clean
 
 | Resource | What you build | When |
 |----------|---------------|------|
-| **Beej's Guide to Network Programming** | Sockets, client/server, multiplexing | After CS:APP Ch. 11 |
+| **Beej's Guide to Network Programming** | Sockets, client/server, multiplexing | Stage 4 (TCP client project) |
 | **Beej's Guide to C** | Quick C reference, good examples | Anytime as reference |
-| **Build Your Own Lisp** — Holden | Lisp interpreter in C: parsing, tagged unions, trees, malloc | After King Ch. 16 |
-| **Crafting Interpreters** (Part III) — Nystrom | Bytecode VM in C: hash tables, GC, compiler | After Build Your Own Lisp |
-| **CS:APP Labs** (CMU) | Shell, malloc, proxy, bomb, attack | Alongside CS:APP chapters |
-| **Stephen Brennan's shell tutorial** | Minimal Unix shell (~200 lines) | After CS:APP Ch. 8 |
+| **CS:APP Labs** (CMU) | Shell, malloc, proxy, bomb, attack | Stage 6, alongside CS:APP chapters |
+| **Stephen Brennan's shell tutorial** | Reference for mini shell project (~200 lines) | Stage 5 |
+| **Crafting Interpreters** (Part III) — Nystrom | Bytecode VM in C: hash tables, GC, compiler | Stage 7+ |
 
 ### Embedded (from the roadmap)
 
 | Book | What it's for | When |
 |------|--------------|------|
-| **Beginning STM32** — Gay | Bridge from C to STM32 hardware | Phase 2 |
-| **Making Embedded Systems** — White | Embedded architecture, patterns, debugging | Phase 5+ |
+| **Beginning STM32** — Gay | Bridge from C to STM32 hardware | Stages 2–4 |
+| **Making Embedded Systems** — White | Embedded architecture, patterns, debugging | Stage 7+ |
 | **Test Driven Development for Embedded C** — Grenning | Testing firmware | When projects get complex |
 
 ### Not recommended
