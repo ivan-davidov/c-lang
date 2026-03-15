@@ -53,6 +53,9 @@ Sent request for offer via email. Items needed before Stage 2.
 | [ ] | MOSFET IRLZ44N logic-level N-channel | 5 | 3 | NOT IRFZ44N — must be logic-level (3.3V gate drive) |
 | [ ] | Op-amp LM358 DIP-8 | 5 | 3 | Need through-hole, not SMD |
 | [ ] | 555 timer NE555P DIP-8 | 5 | 2 | |
+| [ ] | Relay module (5V) | 1 | 2 | For Make: Electronics + useful for ESP32 projects |
+| [ ] | Phototransistor | 2 | 2 | Light-sensitive transistor, Make: Electronics |
+| [ ] | Fuse + holder (1A) | 2 | 2 | Make: Electronics safety experiments |
 | | **Voltage regulators** | | | |
 | [ ] | LM7805 5V regulator (TO-220 bare IC or DIY kit) | 5 | 5 | |
 | [ ] | AMS1117-3.3V regulator | 5 | 5 | |
