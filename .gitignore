@@ -23,3 +23,6 @@ vgcore.*
 # OS
 .DS_Store
 Thumbs.db
+
+# Project binaries
+projects/state-machine/fsm_demo

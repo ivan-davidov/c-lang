@@ -19,7 +19,10 @@ debug: CFLAGS += -fsanitize=address,undefined -O0 -DDEBUG
 debug: LDFLAGS += -fsanitize=address,undefined
 debug: clean all
 
+run: $(TARGET)
+	./$(TARGET)
+
 clean:
 	rm -f $(TARGET) $(OBJS)
 
-.PHONY: all clean debug
+.PHONY: all clean debug run
